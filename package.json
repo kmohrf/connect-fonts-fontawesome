@@ -34,6 +34,7 @@
   "_id": "connect-fonts-fontawesome@0.0.2",
   "_from": "connect-fonts-fontawesome@",
   "dependencies": {
-    "font-awesome": ">4.0.3"
+    "font-awesome": ">4.0.0",
+    "mkdirp": "*"
   }
 }
