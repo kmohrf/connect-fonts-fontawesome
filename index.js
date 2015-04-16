@@ -1,46 +1,53 @@
-const path = require("path");
-const fs = require("fs");
+const path = require("path"),
+      fs = require("fs"),
+      mkdirp = require("mkdirp"),
+      fontawesome = require.resolve(path.join('font-awesome', 'package')),
+      awesomefontdir = path.resolve(path.join(fontawesome, '..', 'fonts'));
 
-var src = path.join(__dirname, "node_modules/font-awesome/fonts");
-var dst = path.join(__dirname, "fonts/default");
+// connect-fonts is very strict about
+// font directory layout, it expects:
+// directory
+//  `- locale (or 'default')
+//       `- font
+//       `- font
+//  `- locale (or 'default')
+//       `- font
+//
+// Standard distribution of the font awesome is flat, so we
+// need to copy files over.
+//
+const dst = path.join(__dirname, 'fonts'),
+    dstpkg = path.join(dst, 'package.json');
+    dstdir = path.join(dst, 'default');
 
-var fontPkgSrc = path.join(__dirname, "node_modules/font-awesome", "package.json");
-var fontPkgDst = path.join(__dirname, "fonts", "package.json");
-
-function copyFontFiles() {
-	var fontFiles = fs.readdirSync(src);
-	for(var i = 0, ii = fontFiles.length; i < ii; i++) {
-		fs.createReadStream(path.join(src, fontFiles[i])).pipe(fs.createWriteStream(path.join(dst, fontFiles[i])));
-	}
-
-	// We copy the package.json from font-awesome. This way we can compare versions to automatically update fonts when needed.
-	fs.createReadStream(fontPkgSrc).pipe(fs.createWriteStream(fontPkgDst));
-}
-
-if(!fs.existsSync(path.join(__dirname, "fonts"))) {
-	// fonts subdir doesn’t exists, create it and copy files.
-	fs.mkdirSync(path.join(__dirname, "fonts"));
-	fs.mkdirSync(path.join(__dirname, "fonts/default"));
-
-	copyFontFiles();
-} else {
-	// fonts subdir exists, compare versions of fonts & update if needed
-	var fontPkgSrcVersion = require(fontPkgSrc).version;
-
-	try {
-		var fontPkgDstVersion = require(fontPkgDst).version;
-
-		if(fontPkgSrcVersion !== fontPkgDstVersion) {
-			copyFontFiles();
-		}
-	} catch(e) {
-		// Cannot find fontPkgDst, copy files
-		copyFontFiles();
-	}
-}
+fs.access(dstpkg, fs.R_OK, function(err) {
+    if (!err) {
+       if (require(fontawesome).version == require(dstpkg).version) {
+           // We have the same version cached already
+           return;
+       }
+    }
+    mkdirp(dstdir, function(err) {
+        if (!err)
+            fs.readdir(awesomefontdir, function(err, files) {
+                if (!err) {
+                   files.forEach(function(fontFile) {
+                       fs.createReadStream(path.join(awesomefontdir, fontFile))
+                          .pipe(fs.createWriteStream(path.join(dstdir, fontFile)));
+                   });
+                   // We copy the package.json from font-awesome.
+                   // This way we can compare versions to
+                   // automatically update fonts when needed.
+                   fs.createReadStream(fontawesome).pipe(fs.createWriteStream(dstpkg));
+                }
+            });
+        else
+            console.log('Cannot create ' + dstdir);
+    });
+});
 
 module.exports = {
-	"root": path.join(__dirname, "fonts"),
+	"root": dst, // We should really be able to say "root": awesomefontdir
 
 	// Package info
 	"package": {
