@@ -20,30 +20,28 @@ const dst = path.join(__dirname, 'fonts'),
     dstpkg = path.join(dst, 'package.json');
     dstdir = path.join(dst, 'default');
 
-fs.access(dstpkg, fs.R_OK, function(err) {
-    if (!err) {
-       if (require(fontawesome).version == require(dstpkg).version) {
-           // We have the same version cached already
-           return;
-       }
-    }
-    mkdirp(dstdir, function(err) {
-        if (!err)
-            fs.readdir(awesomefontdir, function(err, files) {
-                if (!err) {
-                   files.forEach(function(fontFile) {
-                       fs.createReadStream(path.join(awesomefontdir, fontFile))
-                          .pipe(fs.createWriteStream(path.join(dstdir, fontFile)));
-                   });
-                   // We copy the package.json from font-awesome.
-                   // This way we can compare versions to
-                   // automatically update fonts when needed.
-                   fs.createReadStream(fontawesome).pipe(fs.createWriteStream(dstpkg));
-                }
-            });
-        else
-            console.log('Cannot create ' + dstdir);
-    });
+mkdirp(dstdir, function(err) {
+	if (!err) {
+		  try {
+			if (require(fontawesome).version == require(dstpkg).version) {
+			  // We have the same version cached already
+			  return;
+			}
+		  } catch(e) { }
+		  fs.readdir(awesomefontdir, function(err, files) {
+			  if (!err) {
+				 files.forEach(function(fontFile) {
+					 fs.createReadStream(path.join(awesomefontdir, fontFile))
+						.pipe(fs.createWriteStream(path.join(dstdir, fontFile)));
+				 });
+				 // We copy the package.json from font-awesome.
+				 // This way we can compare versions to
+				 // automatically update fonts when needed.
+				 fs.createReadStream(fontawesome).pipe(fs.createWriteStream(dstpkg));
+			  }
+		  });
+	} else
+		console.log('Cannot create ' + dstdir);
 });
 
 module.exports = {
